@@ -1,5 +1,6 @@
 const vscode = require("vscode");
 const simpleGit = require("simple-git");
+const axios = require("axios");
 
 async function getGitDiff() {
   try {
@@ -29,34 +30,37 @@ async function getGitDiff() {
   }
 }
 
-function generateMessage(diff) {
-  if (!diff) return "No changes detected";
+async function generateAICommitMessage(diff) {
+  try {
+    const response = await axios.post("http://localhost:3000/generate-commit", {
+      diff,
+    });
 
-  if (diff.includes("fix") || diff.includes("bug")) {
-    return "fix: resolve bug issues";
+    return response.data.message;
+  } catch (error) {
+    vscode.window.showErrorMessage("AI API failed");
+    console.error("error ", error?.message);
+    return "chore: update code";
   }
-  if (diff.includes("add") || diff.includes("new")) {
-    return "feat: add new feature";
-  }
-  if (diff.includes("remove")) {
-    return "chore: remove unused code";
-  }
-
-  return "chore: update codebase";
 }
 
 function activate(context) {
   let disposable = vscode.commands.registerCommand(
     "git-commit-helper.generateCommitMessage",
     async function () {
-      const diff = await getGitDiff();
+      vscode.window.showInformationMessage("Generating AI commit message...");
 
+      const diff = await getGitDiff();
       if (!diff) return;
 
-      const message = generateMessage(diff);
+      const message = await generateAICommitMessage(diff);
 
-      // Show message
+      // Show result
       vscode.window.showInformationMessage(`Commit: ${message}`);
+      // await vscode.window.showInputBox({
+      //   value: message,
+      //   prompt: "Edit your commit message",
+      // });
 
       // Copy to clipboard
       await vscode.env.clipboard.writeText(message);
@@ -66,9 +70,4 @@ function activate(context) {
   context.subscriptions.push(disposable);
 }
 
-function deactivate() {}
-
-module.exports = {
-  activate,
-  deactivate,
-};
+module.exports = { activate };
