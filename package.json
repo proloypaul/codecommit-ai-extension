@@ -18,8 +18,8 @@
         "title": "Generate Commit Message"
       },
       {
-        "command": "generateCommitMessage.helloWorld",
-        "title": "Hello World"
+        "command": "git-commit-helper.applyAISuggestion",
+        "title": "Improve Code with AI"
       }
     ]
   },
