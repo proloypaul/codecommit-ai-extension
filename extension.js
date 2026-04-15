@@ -1,36 +1,74 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
-const vscode = require('vscode');
+const vscode = require("vscode");
+const simpleGit = require("simple-git");
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+async function getGitDiff() {
+  try {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
 
-/**
- * @param {vscode.ExtensionContext} context
- */
-function activate(context) {
+    if (!workspaceFolders) {
+      vscode.window.showErrorMessage("Open a Git project first");
+      return null;
+    }
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "generateCommitMessage" is now active!');
+    const repoPath = workspaceFolders[0].uri.fsPath;
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with  registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('generateCommitMessage.helloWorld', function () {
-		// The code you place here will be executed every time your command is executed
+    const git = simpleGit(repoPath);
 
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from git-commit-helper!');
-	});
+    const diff = await git.diff();
 
-	context.subscriptions.push(disposable);
+    if (!diff) {
+      vscode.window.showWarningMessage("No changes found");
+      return null;
+    }
+
+    return diff;
+  } catch (err) {
+    console.error(err);
+    vscode.window.showErrorMessage("Git diff failed from getGitDiff function");
+    return null;
+  }
 }
 
-// This method is called when your extension is deactivated
+function generateMessage(diff) {
+  if (!diff) return "No changes detected";
+
+  if (diff.includes("fix") || diff.includes("bug")) {
+    return "fix: resolve bug issues";
+  }
+  if (diff.includes("add") || diff.includes("new")) {
+    return "feat: add new feature";
+  }
+  if (diff.includes("remove")) {
+    return "chore: remove unused code";
+  }
+
+  return "chore: update codebase";
+}
+
+function activate(context) {
+  let disposable = vscode.commands.registerCommand(
+    "git-commit-helper.generateCommitMessage",
+    async function () {
+      const diff = await getGitDiff();
+
+      if (!diff) return;
+
+      const message = generateMessage(diff);
+
+      // Show message
+      vscode.window.showInformationMessage(`Commit: ${message}`);
+
+      // Copy to clipboard
+      await vscode.env.clipboard.writeText(message);
+    },
+  );
+
+  context.subscriptions.push(disposable);
+}
+
 function deactivate() {}
 
 module.exports = {
-	activate,
-	deactivate
-}
+  activate,
+  deactivate,
+};
