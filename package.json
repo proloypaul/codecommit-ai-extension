@@ -9,7 +9,11 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onCommand:git-commit-helper.generateCommitMessage",
+    "onCommand:git-commit-helper.applyAISuggestion",
+    "onCommand:ai-inline.generateSuggestions"
+  ],
   "main": "./extension.js",
   "contributes": {
     "commands": [
@@ -20,6 +24,10 @@
       {
         "command": "git-commit-helper.applyAISuggestion",
         "title": "Improve Code with AI"
+      },
+      {
+        "command": "ai-inline.openWebview",
+        "title": "Generate Inline Suggestions"
       }
     ]
   },
